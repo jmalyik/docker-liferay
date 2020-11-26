@@ -1,0 +1,74 @@
+version: '3.7'
+
+services:
+  openldap:
+    image: demo_openldap
+    container_name: openldap
+    build:
+      context: ./openldap
+    ports:
+      - 636:636
+      - 389:389
+    networks:
+      - DEMOnet
+    restart: unless-stopped
+    command: [--copy-service, --loglevel, debug]
+    volumes:
+      - demo_ldap_database:/var/lib/ldap
+      - demo_ldap_config:/etc/ldap/slapd.d
+
+  postgres:
+    image: demo_postgres
+    container_name: postgres
+    build:
+       context: ./postgres
+    ports:
+       - 5432:5432
+    networks:
+       DEMOnet:
+    volumes:
+       - demo_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  postgresql_web:
+    image: demo_postgres_web
+    container_name: postgres-web
+    build:
+       context: ./postgres-admin
+    ports:
+       - 8210:80
+    networks:
+      - DEMOnet
+    restart: unless-stopped
+    links:
+      - postgres
+    depends_on:
+      - postgres
+ 
+  liferay:
+    image: demo_liferay
+    container_name: liferay
+    build:
+       context: ./liferay
+    ports:
+       - 80:8080
+       - 9990:9990
+    networks:
+      - DEMOnet
+    restart: unless-stopped
+    links:
+      - postgres
+      - openldap
+    depends_on:
+      - postgres
+      - openldap
+
+volumes:
+  demo_ldap_database:
+  demo_ldap_config:
+  demo_postgres_data:
+
+networks:
+  DEMOnet:
+    external: true
+
